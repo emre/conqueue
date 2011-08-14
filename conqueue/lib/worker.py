@@ -39,8 +39,11 @@ class Worker(object):
         listens and executes jobs in a infinite loop based on it's queue name.
     """
 
-    def __init__(self, queue_name):
-        self.queue_name       = queue_name
+    def __init__(self, queue_names):
+        self.queue_names      = queue_names
+        # make it list
+        if not isinstance(self.queue_names, list):
+            self.queue_names  = list(queue_names)
         self.worker_pool      = None
         self.redis_connection = None
 
@@ -60,27 +63,28 @@ class Worker(object):
             # worker forks itself by count based on cpu count.
             self.worker_pool = multiprocessing.Pool(processes = multiprocessing.cpu_count())
 
-        self.queue_name = self.config.PREFIX + ':' + self.queue_name
+        for queue_sequence in xrange(len(self.queue_names)):
+            self.queue_names[queue_sequence] = self.config.PREFIX + ':' + self.queue_names[queue_sequence]
 
         return self
 
     def __repr__(self):
         return "<Worker: %s>" % self.queue_name
 
-    def listen_tasks(self, function, queue = None):
-        if not queue:
-            queue = self.queue_name
-        logging.info('worker started, listening: %s' % queue)
+    def listen_tasks(self, function):
+
+        logging.info('worker started, listening: %s' % self.queue_names)
         while True:
-            for task in self._task_generator(queue):
-                if self.config.USE_MULTI_PROCESSING:
-                    self.worker_pool.apply_async(_execute_task,
-                                                (task, function, self.config, True),
-                                                 callback = self.on_complete)
-                else:
-                    result = _execute_task(task, function, self.config)
-                    self.on_complete(result)
-            time.sleep(0.1)
+            for queue in self.queue_names:
+                for task in self._task_generator(queue):
+                    if self.config.USE_MULTI_PROCESSING:
+                        self.worker_pool.apply_async(_execute_task,
+                                                    (task, function, self.config),
+                                                     callback = self.on_complete)
+                    else:
+                        result = _execute_task(task, function, self.config)
+                        self.on_complete(result)
+                time.sleep(0.1)
 
     def on_complete(self, data):
         if not data.get("status"):

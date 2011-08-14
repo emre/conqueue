@@ -10,17 +10,23 @@ from task import Task
 from exceptions import ConqueueException
 
 def _execute_task(task, function):
-    logging.debug('<Task-%s> started.' % task.id)
-
+    """
+    simple wrapper for the worker function.
+    @todo: add time tracking
+    """
+    logging.debug('<Task-%s> started.' % task.get_id())
     try:
-        function(task.data)
-        logging.debug('<Task-%s> finished with result: %s' % (task.id, task.data))
+        function(task.get_data())
+        logging.debug('<Task-%s> finished with result: %s' % (task.get_id(), task.get_data()))
     except Exception, error:
         logging.error(error)
-        Worker.requeue(task)
+        Worker.mark_as_failed(task)
 
 class Worker(object):
-
+    """
+    base worker object.
+        listens and executes jobs in a infinite loop based on it's queue name.
+    """
     def __init__(self, queue_name):
         self.queue_name  = queue_name
         self.worker_pool = None
@@ -34,6 +40,8 @@ class Worker(object):
         self.config = config
 
         if self.config.USE_MULTI_PROCESSING:
+            # if USE_MULTI_PROCESSING set True in the configuration object,
+            # worker forks itself by count based on cpu count.
             self.worker_pool = multiprocessing.Pool(processes = multiprocessing.cpu_count())
 
         self.queue_name = self.config.PREFIX + ':' + self.queue_name
@@ -43,23 +51,23 @@ class Worker(object):
     def __repr__(self):
         return "<Worker: %s>" % self.queue_name
 
-    def listen_tasks(self, function, blocking_pop = False):
+    def listen_tasks(self, function):
         logging.debug('worker started, listening: %s' % self.queue_name)
         while True:
-            for task in self._task_generator(blocking_pop):
+            for task in self._task_generator():
                 if self.config.USE_MULTI_PROCESSING:
                     self.worker_pool.apply_async(_execute_task, (task, function))
                 else:
                     _execute_task(task, function)
 
     @staticmethod
-    def requeue(task):
+    def mark_as_failed(task):
         pass
 
-    def _task_generator(self, blocking_pop = False):
+    def _task_generator(self):
         try:
             while True:
-                task_data = self._get_from_queue(blocking_pop)
+                task_data = self.redis_connection.lpop(self.queue_name)
                 if task_data is None:
                     break
                 task_data = Task().getFromJson(task_data)
@@ -67,10 +75,3 @@ class Worker(object):
         except KeyboardInterrupt:
             raise ConqueueException('%s exited.' % self.__repr__())
 
-    def _get_from_queue(self, blocking_pop = False):
-        if blocking_pop:
-            task_data = self.redis_connection.blpop(self.queue_name)
-        else:
-            task_data = self.redis_connection.lpop(self.queue_name)
-
-        return task_data

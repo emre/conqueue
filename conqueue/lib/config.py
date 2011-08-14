@@ -6,10 +6,7 @@ class BaseConfig(object):
         'db'       : None,
     }
 
-    SERIALIZER           = 'JsonSerializer'
-    LOG_LEVEL            = 'ERROR'
     USE_MULTI_PROCESSING = True
     PREFIX               = 'conqueue'
-    LOG_FILENAME         = '/var/log/conqueue/conqueue.log'
 
 

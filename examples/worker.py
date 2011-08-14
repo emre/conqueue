@@ -22,7 +22,7 @@ def hello(data):
     print data
     return data
 
-# listens to queues: ['feeds', 'messages']
+# listens two queues: ['feeds', 'messages']
 worker = Conqueue(Configuration, ['feeds', 'messages']).worker()
 worker.listen_tasks(hello)
 

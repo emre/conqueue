@@ -6,20 +6,22 @@ try:
 except ImportError:
     import simplejson as json
 
+import time
+
 from task import Task
 from exceptions import ConqueueException
 
 def _execute_task(task, function, config):
     """
     simple wrapper for the worker function.
-    @param redis_connection
-        needed for the re-queue to the task if exception raises.
-    @todo: add time tracking
     """
     logging.debug('<Task-%s> started.' % task.get_id())
+    start_time = time.time()
     try:
         function(task.get_data())
-        logging.debug('<Task-%s> finished with result: %s' % (task.get_id(), task.get_data()))
+        logging.debug('<Task-%s> finished in %2.2f seconds with result: %s' % (task.get_id(),
+                                                                            time.time() - start_time,
+                                                                            task.get_data()))
         return {
             "status": True,
             "task": task
@@ -78,6 +80,7 @@ class Worker(object):
                 else:
                     result = _execute_task(task, function, self.config)
                     self.on_complete(result)
+            time.sleep(0.1)
 
     def on_complete(self, data):
         if not data.get("status"):
@@ -96,11 +99,9 @@ class Worker(object):
             failed_queue = task.get_queue_name() + ':failed'
         else:
             failed_queue = task.get_queue_name()
-        try:
-            self.get_redis_connection().rpush(failed_queue, task.toJson())
-        except Exception, error:
-            print error
-        
+
+        self.get_redis_connection().rpush(failed_queue, task.toJson())
+
 
     def _task_generator(self, queue):
         try:

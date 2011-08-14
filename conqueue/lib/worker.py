@@ -39,13 +39,10 @@ class Worker(object):
         listens and executes jobs in a infinite loop based on it's queue name.
     """
 
-    def __init__(self, queue_names):
-        self.queue_names      = queue_names
-        # make it list
-        if not isinstance(self.queue_names, list):
-            self.queue_names  = list(queue_names)
+    def __init__(self):
         self.worker_pool      = None
         self.redis_connection = None
+        self.registered_tasks = list()
 
     def set_redis_connection(self, redis_connection):
         self.redis_connection = redis_connection
@@ -63,26 +60,32 @@ class Worker(object):
             # worker forks itself by count based on cpu count.
             self.worker_pool = multiprocessing.Pool(processes = multiprocessing.cpu_count())
 
-        for queue_sequence in xrange(len(self.queue_names)):
-            self.queue_names[queue_sequence] = self.config.PREFIX + ':' + self.queue_names[queue_sequence]
-
         return self
 
     def __repr__(self):
         return "<Worker: %s>" % self.queue_name
 
-    def listen_tasks(self, function):
+    def register_task(self, queue, function):
+        self.registered_tasks.append({
+            "queue"    : self.config.PREFIX + ':' + queue,
+            "function" : function,
+        })
 
-        logging.info('worker started, listening: %s' % self.queue_names)
+        return self
+
+    def listen_tasks(self, queue_name = None):
+        logging.info('worker started')
         while True:
-            for queue in self.queue_names:
-                for task in self._task_generator(queue):
+            for registered_task in self.registered_tasks:
+                for task in self._task_generator(registered_task.get("queue")):
                     if self.config.USE_MULTI_PROCESSING:
                         self.worker_pool.apply_async(_execute_task,
-                                                    (task, function, self.config),
+                                                    (task, registered_task.get("function"), self.config),
                                                      callback = self.on_complete)
                     else:
-                        result = _execute_task(task, function, self.config)
+                        print 'ehi'
+                        result = _execute_task(task, registered_task.get("function"), self.config)
+                        print result
                         self.on_complete(result)
                 time.sleep(0.1)
 
@@ -91,10 +94,6 @@ class Worker(object):
             if self.config.RETRY_BEHAVIOUR[0]:
                 if data.get("task").get_retry_count() < self.config.RETRY_BEHAVIOUR[1]:
                     self.mark_as_failed(data.get("task"))
-
-    def listen_failed_tasks(self, function):
-        failed_queue = self.queue_name + ':failed'
-        return self.listen_tasks(function, failed_queue)
 
     def mark_as_failed(self, task):
         task.increment_retry_count()

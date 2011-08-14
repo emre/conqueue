@@ -6,20 +6,19 @@ from lib.client import Client
 
 class Conqueue(object):
 
-    def __init__(self, config, queue_name):
+    def __init__(self, config):
         self.config            = config
-        self.queue_name        = queue_name
         self._redis_connection = None
 
     def client(self):
-        client_instance = Client(self.queue_name)
+        client_instance = Client()
         client_instance.set_config(self.config)
         client_instance.set_redis_connection(self.get_redis_connection())
 
         return client_instance
     
     def worker(self):
-        worker_instance = Worker(self.queue_name)
+        worker_instance = Worker()
         worker_instance.set_config(self.config)
         worker_instance.set_redis_connection(self.get_redis_connection())
 

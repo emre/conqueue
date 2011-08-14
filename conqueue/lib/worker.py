@@ -9,7 +9,7 @@ except ImportError:
 from task import Task
 from exceptions import ConqueueException
 
-def _execute_task(task, function, config, async = False):
+def _execute_task(task, function, config):
     """
     simple wrapper for the worker function.
     @param redis_connection
@@ -36,7 +36,6 @@ class Worker(object):
     base worker object.
         listens and executes jobs in a infinite loop based on it's queue name.
     """
-    FAILEDS = []
 
     def __init__(self, queue_name):
         self.queue_name       = queue_name
@@ -81,7 +80,6 @@ class Worker(object):
                     self.on_complete(result)
 
     def on_complete(self, data):
-        print data
         if not data.get("status"):
             if self.config.RETRY_BEHAVIOUR[0]:
                 if data.get("task").get_retry_count() < self.config.RETRY_BEHAVIOUR[1]:
@@ -93,7 +91,6 @@ class Worker(object):
 
     def mark_as_failed(self, task):
         task.increment_retry_count()
-        print task.retry_count
         logging.error('%s failed, adding data to failed queue.' % task)
         if not task.is_failed:
             failed_queue = task.get_queue_name() + ':failed'

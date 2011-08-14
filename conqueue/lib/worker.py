@@ -9,18 +9,24 @@ except ImportError:
 from task import Task
 from exceptions import ConqueueException
 
-def _execute_task(task, function):
+def _execute_task(task, function, config):
     """
     simple wrapper for the worker function.
+    @param redis_connection
+        needed for the re-queue to the task if exception raises.
     @todo: add time tracking
     """
     logging.debug('<Task-%s> started.' % task.get_id())
     try:
         function(task.get_data())
         logging.debug('<Task-%s> finished with result: %s' % (task.get_id(), task.get_data()))
+        return True
     except Exception, error:
         logging.error(error)
-        Worker.mark_as_failed(task)
+        if config.RETRY_BEHAVIOUR[0]:
+            if task.get_retry_count() < config.RETRY_BEHAVIOUR[1]:
+                Worker.mark_as_failed(task, redis_connection)
+        return False
 
 class Worker(object):
     """
@@ -35,6 +41,9 @@ class Worker(object):
         self.redis_connection = redis_connection
 
         return self
+
+    def get_redis_connection(self):
+        return self.redis_connection
 
     def set_config(self, config):
         self.config = config
@@ -51,23 +60,38 @@ class Worker(object):
     def __repr__(self):
         return "<Worker: %s>" % self.queue_name
 
-    def listen_tasks(self, function):
-        logging.debug('worker started, listening: %s' % self.queue_name)
+    def listen_tasks(self, function, queue = None):
+        if not queue:
+            queue = self.queue_name
+        logging.info('worker started, listening: %s' % queue)
         while True:
-            for task in self._task_generator():
+            for task in self._task_generator(queue):
                 if self.config.USE_MULTI_PROCESSING:
-                    self.worker_pool.apply_async(_execute_task, (task, function))
+                    self.worker_pool.apply_async(_execute_task, (task, function, self.config))
                 else:
-                    _execute_task(task, function)
+                    _execute_task(task, function, self.config)
+
+    def listen_failed_tasks(self, function):
+        failed_queue = self.queue_name + ':failed'
+        return self.listen_tasks(function, failed_queue)
 
     @staticmethod
-    def mark_as_failed(task):
-        pass
+    def mark_as_failed(task, redis_connection):
+        task.increment_retry_count()
+        print task.retry_count
+        logging.error('%s failed, adding data to failed queue.' % task)
+        if not task.is_failed:
+            failed_queue = task.get_queue_name() + ':failed'
+        else:
+            failed_queue = task.get_queue_name()
 
-    def _task_generator(self):
+        redis_connection.rpush(failed_queue, task.toJson())
+        
+
+    def _task_generator(self, queue):
         try:
             while True:
-                task_data = self.redis_connection.lpop(self.queue_name)
+                task_data = self.redis_connection.lpop(queue)
                 if task_data is None:
                     break
                 task_data = Task().getFromJson(task_data)

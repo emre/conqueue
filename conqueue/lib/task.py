@@ -10,21 +10,25 @@ import uuid
 class Task(object):
 
     def __init__(self, data = None, queue_name = None):
-        self.id         = uuid.uuid4()
-        self.data       = data
-        self.queue_name = queue_name
+        self.id          = uuid.uuid4()
+        self.data        = data
+        self.queue_name  = queue_name
+        self.retry_count = 0
 
     def toJson(self):
         return json.dumps({
-            'id'         : str(self.id),
-            'data'       : self.data,
-            'queue_name' : self.queue_name,
+            'id'         : self.get_id(),
+            'data'       : self.get_data(),
+            'queue_name' : self.get_queue_name(),
+            'retry_count': self.get_retry_count(),
         })
 
     def getFromJson(self, json_data):
-        entity    = json.loads(json_data)
-        self.id   = entity.get("id")
-        self.data = entity.get("data")
+        entity           = json.loads(json_data)
+        self.id          = entity.get("id")
+        self.data        = entity.get("data")
+        self.queue_name  = entity.get("queue_name")
+        self.retry_count = entity.get("retry_count")
 
         return self
 
@@ -44,10 +48,32 @@ class Task(object):
         return self
 
     def get_id(self):
-        return self.id
+        return str(self.id)
 
     def get_data(self):
         return self.data
 
     def get_queue_name(self):
         return self.queue_name
+
+    def get_retry_count(self):
+        return self.retry_count
+
+    def set_retry_count(self, value):
+        self.retry_count = value
+
+        return self
+
+    @property
+    def is_failed(self):
+        if self.queue_name.find('failed') < 0:
+            return False
+        return True
+
+    def increment_retry_count(self):
+        self.retry_count += 1
+
+        return self
+
+    def __repr__(self):
+        return "<Task-%s-%s>" % (self.get_id(), self.get_queue_name())

@@ -8,5 +8,6 @@ class BaseConfig(object):
 
     USE_MULTI_PROCESSING = True
     PREFIX               = 'conqueue'
+    RETRY_BEHAVIOUR      = (True, 100)
 
 

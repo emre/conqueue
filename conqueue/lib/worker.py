@@ -83,9 +83,7 @@ class Worker(object):
                                                     (task, registered_task.get("function"), self.config),
                                                      callback = self.on_complete)
                     else:
-                        print 'ehi'
                         result = _execute_task(task, registered_task.get("function"), self.config)
-                        print result
                         self.on_complete(result)
                 time.sleep(0.1)
 

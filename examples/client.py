@@ -11,5 +11,5 @@ class Configuration(config.BaseConfig):
 	}
 
 
-client  = Conqueue(Configuration, 'feeds').client()
-client.add_task('http://news.ycombinator.com/rss')
+client  = Conqueue(Configuration).client()
+client.add_task('feeds', 'http://news.ycombinator.com/rss')

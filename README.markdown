@@ -73,7 +73,7 @@ Prefix for the redis keys.
 ### RETRY_BEHAVIOUR
 _default: (True, 100)_
 
-if worker functions raised any exception, conqueue catches it, and requeue if you want. First argument is for enabling/disabling.
+if worker functions raises any exception, conqueue catches it, and requeue if you want. First argument is for enabling/disabling.
 second argument is for retry count.
 
 Task Priority

@@ -5,3 +5,6 @@ class ConqueueException(Exception):
 
 class ConqueueEmptyException(Exception):
     pass
+
+class ConqueueBadQueueNameException(Exception):
+    pass

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-import signal
 
 from conqueue.conqueue import Conqueue
 from conqueue.lib.exceptions import ConqueueEmptyException
@@ -37,7 +36,6 @@ class TestWorkerFunctions(unittest.TestCase):
     def test_clear_failed_tasks(self):
         self.worker.register_task('feeds', success_function)
         self.assertRaises(ConqueueEmptyException, self.worker.listen_tasks, True)
-
 
 if __name__ == '__main__':
     unittest.main()

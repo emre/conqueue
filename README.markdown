@@ -57,18 +57,22 @@ Configuration Options
 -------------
 ### USE_MULTI_PROCESSING
 _default: True_
+
 If set True, conqueue forks worker function based on cpu count by default.
 
 ### POOLSIZE_PER_WORKER
 _default: None_
+
 If you don't set this explicitly, conqueue forks workers based on CPU count. (which is recommended.)
 
 ### PREFIX = 'conqueue'
 _default: conqueue_
+
 Prefix for the redis keys.
 
 ### RETRY_BEHAVIOUR
 _default: (True, 100)_
+
 if worker functions raised any exception, conqueue catches it, and requeue if you want. First argument is for enabling/disabling.
 second argument is for retry count.
 

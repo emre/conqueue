@@ -7,6 +7,7 @@ class BaseConfig(object):
     }
 
     USE_MULTI_PROCESSING = True
+    POOLSIZE_PER_WORKER  = None
     PREFIX               = 'conqueue'
     RETRY_BEHAVIOUR      = (True, 100)
 

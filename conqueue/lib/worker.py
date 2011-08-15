@@ -57,13 +57,13 @@ class Worker(object):
 
         if self.config.USE_MULTI_PROCESSING:
             # if USE_MULTI_PROCESSING set True in the configuration object,
-            # worker forks itself by count based on cpu count.
-            self.worker_pool = multiprocessing.Pool(processes = multiprocessing.cpu_count())
-
+            # worker forks itself by count based on cpu count. (if not set explicitly.)
+            pool_size = self.config.POOLSIZE_PER_WORKER if self.config.POOLSIZE_PER_WORKER else multiprocessing.cpu_count()
+            self.worker_pool = multiprocessing.Pool(processes = pool_size)
         return self
 
     def __repr__(self):
-        return "<Worker: %s>" % self.queue_name
+        return "<Worker: %s>" % id(self)
 
     def register_task(self, queue, function):
         self.registered_tasks.append({

@@ -16,7 +16,7 @@ class Configuration(BaseConfig):
    USE_MULTI_PROCESSING = True
 
 # set logging level as debug in development
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 def parse_feed(data):
     time.sleep(2)

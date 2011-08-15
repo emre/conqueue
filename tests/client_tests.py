@@ -4,7 +4,7 @@ import unittest
 import random
 
 from conqueue.conqueue import Conqueue
-from conqueue.lib.exceptions import ConqueueBadQueueNameException
+from conqueue.lib.exceptions import ConqueueBadQueueNameException, ConqueueEmptyException
 from base import Configuration, success_function, failure_function
 
 class TestClientFunctions(unittest.TestCase):
@@ -17,6 +17,8 @@ class TestClientFunctions(unittest.TestCase):
         task_name = str(random.random())
         self.assertEqual(True, self.client.add_task(task_name, 'data'))
         assert self.client.redis_connection.llen(self.client.config.PREFIX + ":" + task_name) > 0
+        self.worker.register_task(task_name, success_function)
+        self.assertRaises(ConqueueEmptyException, self.worker.listen_tasks, True)
 
     def test_add_invalid_task(self):
         task_name = str(random.random())

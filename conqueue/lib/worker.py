@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import multiprocessing
 import logging
 
@@ -9,7 +11,7 @@ except ImportError:
 import time
 
 from task import Task
-from exceptions import ConqueueException
+from exceptions import ConqueueException, ConqueueEmptyException
 
 def _execute_task(task, function, config):
     """
@@ -73,7 +75,7 @@ class Worker(object):
 
         return self
 
-    def listen_tasks(self, queue_name = None):
+    def listen_tasks(self, close_on_empty_queue = False):
         logging.info('worker started')
         while True:
             for registered_task in self.registered_tasks:
@@ -86,6 +88,10 @@ class Worker(object):
                         result = _execute_task(task, registered_task.get("function"), self.config)
                         self.on_complete(result)
                 time.sleep(0.1)
+
+            if close_on_empty_queue:
+                raise ConqueueEmptyException('queues are empty')
+
 
     def on_complete(self, data):
         if not data.get("status"):

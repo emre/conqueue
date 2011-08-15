@@ -2,3 +2,6 @@
 
 class ConqueueException(Exception):
     pass
+
+class ConqueueEmptyException(Exception):
+    pass

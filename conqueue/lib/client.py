@@ -17,6 +17,10 @@ class Client(object):
         task  = Task(data, queue)
         self.get_redis_connection().rpush(task.get_queue_name(), task.toJson())
 
+        return True
+
+
     def set_config(self, config):
         self.config     = config
+
         return self

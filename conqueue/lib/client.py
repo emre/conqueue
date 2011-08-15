@@ -28,7 +28,7 @@ class Client(object):
             value = str(value)
 
         pattern = "[^a-zA-Z0-9_\-:]"
-        if re.match('[^a-zA-Z0-9_\-:]', value):
+        if re.match(pattern, value):
             raise ConqueueBadQueueNameException('queue names must be in: %s', pattern)
 
         return value

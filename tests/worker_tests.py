@@ -23,6 +23,13 @@ class TestWorkerFunctions(unittest.TestCase):
         self.worker.register_task('feeds', success_function)
         self.assertRaises(ConqueueEmptyException, self.worker.listen_tasks, True)
 
+    def test_process_multi_queue(self):
+        self.client.add_task('feeds', 'http://www.reddit.com/.rss')
+        self.client.add_task('messages', 'hi!')
+        self.worker.register_task('feeds', success_function)
+        self.worker.register_task('messages', success_function)
+        self.assertRaises(ConqueueEmptyException, self.worker.listen_tasks, True)
+
     def test_queue_empty(self):
         self.worker.register_task('feeds', success_function)
         self.assertRaises(ConqueueEmptyException, self.worker.listen_tasks, True)

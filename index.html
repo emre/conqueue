@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Conqueue by emre</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Conqueue</h1>
+<p>conqueue is a queue manager library built on the top of redis.</p>
+        <p class="view"><a href="https://github.com/emre/conqueue">View the Project on GitHub <small>emre/conqueue</small></a></p>
+        <ul>
+          <li><a href="https://github.com/emre/conqueue/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/emre/conqueue/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/emre/conqueue">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>Conqueue</h1>
+
+<p>Conqueue is a queue manager library built on the top of redis. You can create jobs in queues, and process later with worker
+scripts asynchronously.</p>
+
+<h2>Installation</h2>
+
+<pre><code>git clone git://github.com/emre/conqueue.git
+sudo python setup.py install
+</code></pre>
+
+<p>In order to use conqueue, you need to install redis-py library (sudo pip install redis), and a working redis-server instance.</p>
+
+<p>Conqueue works with Configuration objects. There are some options you can choose for conqueue's workflow.</p>
+
+<p>A simple worker script that listens 'feeds' queue.</p>
+
+<div class="highlight">
+<pre><span class="kn">from</span> <span class="nn">conqueue.conqueue</span> <span class="kn">import</span> <span class="n">Conqueue</span>
+<span class="kn">from</span> <span class="nn">conqueue.lib.config</span> <span class="kn">import</span> <span class="n">BaseConfig</span>
+
+<span class="k">class</span> <span class="nc">Configuration</span><span class="p">(</span><span class="n">BaseConfig</span><span class="p">):</span>
+   <span class="n">REDIS_SERVER_INFO</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="s">'host'</span>     <span class="p">:</span> <span class="s">'localhost'</span><span class="p">,</span>
+      <span class="s">'port'</span>     <span class="p">:</span> <span class="mi">6379</span><span class="p">,</span>
+      <span class="s">'db'</span>       <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+   <span class="p">}</span>
+
+   <span class="n">USE_MULTI_PROCESSING</span> <span class="o">=</span> <span class="bp">True</span>
+   <span class="n">POOLSIZE_PER_WORKER</span>  <span class="o">=</span> <span class="mi">5</span>
+
+<span class="k">def</span> <span class="nf">parse_feed</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">time</span>
+    <span class="c"># make something with the feed</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">print</span> <span class="n">data</span>
+
+<span class="c"># listens two queues: ['feeds', 'messages']</span>
+<span class="n">worker</span> <span class="o">=</span> <span class="n">Conqueue</span><span class="p">(</span><span class="n">Configuration</span><span class="p">)</span><span class="o">.</span><span class="n">worker</span><span class="p">()</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">register_task</span><span class="p">(</span><span class="s">'feeds'</span><span class="p">,</span> <span class="n">parse_feed</span><span class="p">)</span>
+
+<span class="n">worker</span><span class="o">.</span><span class="n">listen_tasks</span><span class="p">()</span>
+
+</pre>
+</div>
+
+
+<p>Client script that puts jobs to the worker:</p>
+
+<div class="highlight">
+<pre><span class="kn">from</span> <span class="nn">conqueue.conqueue</span> <span class="kn">import</span> <span class="n">Conqueue</span>
+
+<span class="n">client</span>  <span class="o">=</span> <span class="n">Conqueue</span><span class="p">(</span><span class="n">Configuration</span><span class="p">)</span><span class="o">.</span><span class="n">client</span><span class="p">()</span>
+<span class="n">client</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="s">'messages'</span><span class="p">,</span> <span class="s">'how you doing?'</span><span class="p">)</span>
+</pre>
+</div>
+
+
+<h2>Configuration Options</h2>
+
+<h3>USE_MULTI_PROCESSING</h3>
+
+<p><em>default: True</em></p>
+
+<p>If set True, conqueue forks worker function based on cpu count by default.</p>
+
+<h3>POOLSIZE_PER_WORKER</h3>
+
+<p><em>default: None</em></p>
+
+<p>If you don't set this explicitly, conqueue forks workers based on CPU count. (which is recommended.)</p>
+
+<h3>PREFIX = 'conqueue'</h3>
+
+<p><em>default: conqueue</em></p>
+
+<p>Prefix for the redis keys.</p>
+
+<h3>RETRY_BEHAVIOUR</h3>
+
+<p><em>default: (True, 100)</em></p>
+
+<p>if worker functions raises any exception, conqueue catches it, and requeue if you want. First argument is for enabling/disabling.
+second argument is for retry count.</p>
+
+<h2>Task Priority</h2>
+
+<p>There is no support for this. But you can do it manually by creating more instances for your workers. If you use register_task more than one
+in one worker, first registered queue will have high priority.</p>
+
+<h2>Basic Admin Script</h2>
+
+<p>there is a simple and stupid script for queue monitoring in the /tools directory. A frontend with more meaningful information
+will be added in the future.</p>
+
+<pre><code>emre@amy:~/github_projects/conqueue/tools$ python conqueue-admin.py
+conqueue:feeds 15
+conqueue:feeds:failed 1
+conqueue:messages 5
+</code></pre>
+
+<h2>Todo</h2>
+
+<ul>
+<li>Management/Monitoring Frontend</li>
+<li>
+<em>Optional</em> gevent based pool instead of multiprocessing library.</li>
+<li>Redis sharding in the back. (with consistent hashing: <a href="http://emreyilmaz.me/implementing-consistent-hashing-into-your-redis">http://emreyilmaz.me/implementing-consistent-hashing-into-your-redis</a>)</li>
+</ul><h2>Notes</h2>
+
+<p>Remember that, conqueue is not tested well. It is a weekend hackathon project, and still in early development.</p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/emre">emre</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
+  </body>
+</html>

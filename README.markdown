@@ -10,7 +10,7 @@ Installation
 git clone git://github.com/emre/conqueue.git
 sudo python setup.py install
 ```
-In order to use conqueue, you need to instal redis-py library (sudo pip install redis), and a working redis-server instance.
+In order to use conqueue, you need to install redis-py library (sudo pip install redis), and a working redis-server instance.
 
 Conqueue works with Configuration objects. There are some options you can choose for conqueue's workflow.
 
